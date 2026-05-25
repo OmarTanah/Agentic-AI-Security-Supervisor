@@ -220,7 +220,7 @@ The agent already polls the Wazuh API every 30 seconds. No extra config needed.
 
 For a detailed explanation of the design, false‑positive reduction methodology, and performance benchmarks (MTTD/MTTR), see the accompanying paper:
 
-📄 **[Agentic AI Security Supervisor](Research_Paper/Agentic_AI_Security_Supervisor.pdf)**
+📄 **[Agentic AI Security Supervisor](Research_Paper/Agentic_AI_Security_Supervisor_Research_Paper.pdf)**
 
 ---
 
