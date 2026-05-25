@@ -1,0 +1,153 @@
+{
+  "block_durations": {
+    "LOW": 30,
+    "MEDIUM": 60,
+    "HIGH": 300,
+    "CRITICAL": 3600
+  },
+
+  "max_block_duration_seconds": 3600,
+
+  "protected_internal_ranges": [
+    "10.0.0.0/8",
+    "172.16.0.0/12"
+  ],
+
+  "protected_accounts": [
+    "root", "wazuh", "ubuntu",
+    "admin", "Administrator"
+  ],
+
+  "mandatory_escalation_triggers": {
+    "successful_auth_after_failures": true,
+    "target_is_domain_controller": true,
+    "lateral_movement_detected": true,
+    "ransomware_pattern_detected": true,
+    "data_exfiltration_indicators": true
+  },
+
+  "autonomous_handling_threshold": {
+    "max_priority_level": "HIGH",
+    "max_fp_uncertainty": 0.4,
+    "require_internal_ip_escalation": true
+  },
+
+  "fp_thresholds": {
+    "close_as_fp_above": 0.70,
+    "escalate_uncertain_above": 0.40,
+    "confirmed_tp_below": 0.30
+  },
+
+  "priority_thresholds": {
+    "CRITICAL": 40,
+    "HIGH": 25,
+    "MEDIUM": 15,
+    "LOW": 0
+  },
+
+  "correlation_window_minutes": 30,
+
+  "agent_config": {
+    "max_iterations": 6,
+    "max_tokens": 1536,
+    "temperature": 0.1,
+    "verbose": true
+  },
+
+  "attack_response_playbooks": {
+
+    "brute_force": {
+      "name": "SSH / Authentication Brute Force",
+      "mitre_techniques": ["T1110", "T1110.001", "T1110.003"],
+      "nist_controls": ["AC-7", "AU-2", "SI-4"],
+      "description": "Repeated failed login attempts to gain unauthorised access.",
+      "detection_indicators": [
+        "High volume of failed authentication events (rule IDs 5760, 5763, 5503, 5504)",
+        "Same source IP targeting one or multiple accounts",
+        "Spike in 'PAM: User login failed' or 'sshd: brute force' alerts"
+      ],
+      "investigation_steps": [
+        "Use query_recent_alerts on the source IP to count failed attempts and time span.",
+        "Use check_successful_login to see if any later succeeded.",
+        "Check IP reputation (check_ip_reputation) – look for VT malicious > 0 or abuse score > 50.",
+        "If source IP is 0.0.0.0 (missing), use query_alerts_by_target to find candidate attacker IPs.",
+        "Determine if target user is privileged (root, admin, etc.) for severity escalation."
+      ],
+      "response_actions": [
+        "If >10 failed attempts in 24h OR any successful login after failures → confirmed threat.",
+        "Block source IP for 3600 seconds (CRITICAL severity).",
+        "If source is internal and not a known security tool, still block for 3600s and escalate.",
+        "Escalate to Tier‑2 analyst with CRITICAL priority, summarising failed/successful counts."
+      ],
+      "escalation_requirements": "Always escalate after blocking; escalate even without blocking if the pattern is suspicious but not yet confirmed (MEDIUM priority)."
+    },
+
+    "privilege_escalation": {
+      "name": "Privilege Escalation (General)",
+      "mitre_techniques": ["T1548", "T1548.003", "T1068"],
+      "nist_controls": ["AC-6", "AU-2", "SI-4"],
+      "description": "Successful or attempted elevation of privileges (sudo, su, kernel exploit, UAC bypass).",
+      "detection_indicators": [
+        "Alert rules: 5400, 5401 (failed sudo), 5402, 5403 (successful sudo), 5404 (new sudo session)",
+        "Unexpected process creation as root from a non‑privileged parent",
+        "Modification of /etc/sudoers or polkit‑related files"
+      ],
+      "investigation_steps": [
+        "If the alert lacks a source IP (0.0.0.0), use query_alerts_by_target on the target host to find who was recently attacking.",
+        "Look for preceding brute‑force or suspicious login from the same host using query_recent_alerts.",
+        "Check if the escalation was performed by a known admin during business hours (use get_asset_info and context).",
+        "If linked to a network attack, the attacker IP is likely the source of the preceding brute force."
+      ],
+      "response_actions": [
+        "If the escalation is linked to an external attacker IP: block that IP for 3600s and escalate CRITICAL.",
+        "If the escalation appears to be from a local exploit (e.g., kernel bug) with no network attacker, consider host isolation (via disable_user_account or manual action).",
+        "If performed by a trusted admin during business hours from a whitelisted IP, close as FP (use close_alert_as_fp).",
+        "In all confirmed cases, escalate to Tier‑2 analyst with a detailed timeline."
+      ],
+      "escalation_requirements": "Escalate immediately if linked to an attacker; also escalate if uncertain but high potential impact."
+    },
+
+    "port_scan": {
+      "name": "Network Port Scan",
+      "mitre_techniques": ["T1046", "T1595"],
+      "nist_controls": ["RA-5", "SI-4"],
+      "description": "Reconnaissance activity – single IP connecting to many ports or many hosts.",
+      "detection_indicators": [
+        "Alert rules 40101, 40102, 40103 (port scan detection)",
+        "Multiple firewall deny events from same source to multiple ports"
+      ],
+      "investigation_steps": [
+        "Check if source IP is an authorised vulnerability scanner (check asset inventory).",
+        "Use query_recent_alerts to see the diversity of targets and ports.",
+        "Check IP reputation – known scanner IPs often appear in threat intel."
+      ],
+      "response_actions": [
+        "If external and not authorised: block for 3600s and escalate with HIGH priority.",
+        "If internal and not a known scanner: isolate host and escalate to investigate possible compromise."
+      ],
+      "escalation_requirements": "Escalate for any confirmed unauthorised scan."
+    },
+
+    "lateral_movement": {
+      "name": "Lateral Movement",
+      "mitre_techniques": ["T1021", "T1078", "T1550"],
+      "nist_controls": ["AC-6", "SI-4", "DE.AE-3"],
+      "description": "Attacker moving from one compromised host to another within the network.",
+      "detection_indicators": [
+        "Successful authentications (rule 5501, 5502) from the same source IP on multiple distinct hosts within a short time.",
+        "Privileged account usage on hosts that don't normally require it."
+      ],
+      "investigation_steps": [
+        "Identify the source IP and verify its asset criticality.",
+        "Check if the movement originates from a domain controller or high‑value asset.",
+        "Correlate with earlier brute‑force or privilege escalation events."
+      ],
+      "response_actions": [
+        "Block source IP immediately on all detected targets.",
+        "Escalate CRITICAL – isolate affected hosts if feasible.",
+        "Consider disabling compromised user accounts."
+      ],
+      "escalation_requirements": "Always escalate when lateral movement is confirmed."
+    }
+  }
+}
