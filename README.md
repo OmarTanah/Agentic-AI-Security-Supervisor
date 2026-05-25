@@ -28,7 +28,7 @@ Alert fatigue is the #1 challenge in SOCs. This agent reduces **Mean Time to Det
 ## Architecture
 
 <!-- Insert your architecture diagram here -->
-![Architecture Diagram](Architecture.jpg)
+![Architecture Diagram](Images/Architecture.jpg)
 
 ---
 
@@ -200,19 +200,19 @@ The agent already polls the Wazuh API every 30 seconds. No extra config needed.
 
 | File | Role |
 |------|------|
-| `main.py` | Flask API, agent initialisation, alert pipeline |
-| `app_config.py` | Configuration loader (environment variables) |
-| `triage_engine.py` | Rule‑based FP probability and priority scoring |
-| `context_enricher.py` | Gathers asset info, IP history, reputation, etc. |
-| `correlation_engine.py` | Detects multi‑stage attack patterns |
-| `report_generator.py` | Produces human‑readable incident reports |
-| `db_manager.py` | SQLite database for alerts, assets, reputation |
-| `tools/wazuh_tools.py` | LLM tools: query alerts, reputation, whitelist, etc. |
-| `tools/block_tools.py` | LLM tools: block IP, disable user, escalate |
-| `tools/report_tools.py` | LLM tools: save notes, close as FP |
-| `policies.json` | Thresholds and escalation triggers |
-| `requirements.txt` | Python dependencies |
-| `investigations.log` | (generated) Full audit log of LLM investigations |
+| `Code/main.py` | Flask API, agent initialisation, alert pipeline |
+| `Code/app_config.py` | Configuration loader (environment variables) |
+| `Code/triage_engine.py` | Rule‑based FP probability and priority scoring |
+| `Code/context_enricher.py` | Gathers asset info, IP history, reputation, etc. |
+| `Code/correlation_engine.py` | Detects multi‑stage attack patterns |
+| `Code/report_generator.py` | Produces human‑readable incident reports |
+| `Code/db_manager.py` | SQLite database for alerts, assets, reputation |
+| `Code/tools/wazuh_tools.py` | LLM tools: query alerts, reputation, whitelist, etc. |
+| `Code/tools/block_tools.py` | LLM tools: block IP, disable user, escalate |
+| `Code/tools/report_tools.py` | LLM tools: save notes, close as FP |
+| `Code/policies.json` | Thresholds and escalation triggers |
+| `Code/requirements.txt` | Python dependencies |
+| `Code/investigations.log` | (generated) Full audit log of LLM investigations |
 
 ---
 
@@ -220,7 +220,7 @@ The agent already polls the Wazuh API every 30 seconds. No extra config needed.
 
 For a detailed explanation of the design, false‑positive reduction methodology, and performance benchmarks (MTTD/MTTR), see the accompanying paper:
 
-📄 **[Agentic AI Security Supervisor](Agentic%20AI%20Security%20Supervisor.pdf)**
+📄 **[Agentic AI Security Supervisor](Research_Paper/Agentic_AI_Security_Supervisor.pdf)**
 
 ---
 
